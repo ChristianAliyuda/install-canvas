@@ -1,0 +1,137 @@
+#Step 1: Install Ruby
+
+#To install Ruby and Rails on Ubuntu, you’ll need  to install some dependencies. To make that happen, install Node.js and Yarn repositories. This will make installing the dependencies easier.
+
+#First install these curl and git packages.
+
+sudo apt update
+sudo apt install curl git
+
+#Than run the commands below to add Node.js and Yarn repositories and keys to your system. Then install some core packages to get your environment going.
+
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+
+#sudo apt-get update
+#sudo apt-get install nodejs zlib1g-dev build-essential libpq-dev libssl-dev redis-server libreadline-dev libyaml-dev libsqlite3-dev sqlite3 libxml2-dev zlib1g-dev libxml2-dev libsqlite3-dev libpq-dev libxmlsec1-dev make g++ libxslt1-dev libcurl4-openssl-dev libffi-dev
+
+#When you’re done. continue below:
+
+#After adding the repositories and installing necessary packages above, install Ruby with your local profile settings using rbenv. you’ll then use rbenv to install ruby-build.
+
+cd ~/
+git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+exec $SHELL
+
+git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+echo 'export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"' >> ~/.bashrc
+exec $SHELL
+
+#After setting up your local profile. run the commands below to install Ruby version 2.5.3. If a newer version is available, replace the version number to that. visit this site to find out Ruby latest versions.
+
+rbenv install 2.5.3
+rbenv global 2.5.3
+
+#To verify that Ruby is installed, run the commands below:
+
+ruby -v
+
+#You should see similar lines as below:
+
+#ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+
+#Another package management you’ll want to install is bundler. For Canvas LMS, install bundler version 1.13.6 by running the commands below:
+
+#gem install bundler -v 1.13.6
+
+#Now run the command below after installing bundler.
+
+#rbenv rehash
+#Step 2: Install PostgreSQL Server
+
+#PostgreSQL server can be installed on Ubuntu by running the commands below:
+
+sudo apt-get install postgresql
+
+#The commands above won’t necessarily install the latest version of PostgreSQL. If you want the latest, you may want to read the post below:
+
+#After installing PostgreSQL server, you can run the commands below to create a database user called canvas. When prompted to create a password, type and confirm one, then continue.
+
+sudo -u postgres createuser canvas --no-createdb --no-superuser --no-createrole --pwprompt
+
+#After that, run the commands below to create a new database called canvas_production, then make canvas owner.
+
+sudo -u postgres createdb canvas_production --owner=canvas
+
+#Exit and continue with installing Canvas LMS.
+
+#After installing Postgres, you will need to set your system username as a postgres superuser. You can do so by running the following commands:
+
+sudo -u postgres createuser $USER
+sudo -u postgres psql -c "alter user $USER with superuser" postgres
+
+#Step 3: Install Yarn
+
+#Now that Ruby environment is set up, run the commands below to install Rails. Rails can be installed from a Node.Js. Run the commands below to install Node.js repository, then install Node.js package.
+
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo apt-get update && sudo apt-get install yarn=1.10.1-1
+
+#Rubygems also comes installed by default, however, it could be an old version which will cause problems. Update using:
+
+gem update --system
+Step 4: Install Canvas LMS
+
+#Now that your environment is ready, run the commands below to install Canvas LMS and build your first site.  Next, run the commands below.
+
+#The best way to use this guide is to follow each step as it happens. No code or step needed to make this example application has been left out, so you can literally follow along step-by-step.
+
+#To begin, open a terminal, navigate to home folder and download Canvas packages.
+
+cd ~/
+git clone https://github.com/instructure/canvas-lms.git
+cd canvas-lms
+git checkout stable
+
+#While still in your home folder, run the commands below configure Canvas environment.
+
+#for config in amazon_s3 database delayed_jobs domain file_store outgoing_mail security external_migration; do cp config/$config.yml.example config/$config.yml; done
+
+#Next, run the commands below to create Canvas dynamic settings file and its database configuration file.
+
+cp config/dynamic_settings.yml.example config/dynamic_settings.yml
+cp config/database.yml.example config/database.yml
+
+#Edit the file config/database.yml and set your Canvas Database credentials.
+
+nano config/database.yml
+
+#Edit the production configuration lines and save.
+
+.
+production:
+   adapter: postgresql
+   encoding: utf8
+   database: canvas_production
+   host: localhost
+   username: canvas
+   password: passwore_here
+   timeout: 5000
+
+#Finally, run the commands below to download all Canvas dependencies.
+
+#bundle install
+yarn install --pure-lockfile && yarn install --pure-lockfile
+sudo npm install -g coffee-script@1.6.2
+
+#When you’re done with those, run the commands below to setup Canvas.
+
+#bundle exec rails db:initial_setup
+#bundle exec rails canvas:compile_assets
+#bundle exec rails server
+
+#Open up a browser on the same computer as the one running the server and navigate to http://localhost:3000/ and log in with the user credentials you set up during database configuration.
